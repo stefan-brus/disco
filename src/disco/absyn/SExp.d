@@ -21,6 +21,26 @@ private import std.string;
 
 
 /**
+ * S-Expression exception class
+ */
+
+public class SExpException : Exception
+{
+    /**
+     * Constructor
+     *
+     * Params:
+     *      msg = The error message
+     */
+
+    public this ( string msg )
+    {
+        super(msg);
+    }
+}
+
+
+/**
  * Expression base class
  */
 
@@ -178,6 +198,13 @@ public class SExp : Exp
 public class Symbol : Exp
 {
     /**
+     * The string of this symbol
+     */
+
+    private string _str;
+
+
+    /**
      * Constructor
      *
      * Params:
@@ -188,13 +215,6 @@ public class Symbol : Exp
     {
         super(parse_tree);
     }
-
-
-    /**
-     * The string of this symbol
-     */
-
-    public string _str;
 
 
     /**
