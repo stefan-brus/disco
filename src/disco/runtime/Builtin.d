@@ -95,7 +95,20 @@ public class BuiltinFunctions : Singleton!(BuiltinFunctions)
     }
     body
     {
-        env.objs[args[0].str] = new Variable(Evaluator.eval(args[1], env));
+        auto name = args[0].str;
+        auto exp = args[1];
+        auto cur_obj = name in env;
+
+        if ( cast(Constant)cur_obj )
+        {
+            throw new SExpException("set: " ~ name ~ " is a constant");
+        }
+        else if ( cast(Builtin)cur_obj )
+        {
+            throw new SExpException("set: " ~ name ~ " is a built-in function");
+        }
+
+        env.objs[name] = new Variable(Evaluator.eval(exp, env));
 
         return NIL;
     }
@@ -142,9 +155,22 @@ public class BuiltinFunctions : Singleton!(BuiltinFunctions)
             return cast(Symbol) exp;
         }
 
-        auto arg_list = Array.transform((cast(SExp)args[1]).exps, &toSymbol);
+        auto name = args[0].str;
+        auto exp = cast(SExp)args[1];
+        auto cur_obj = name in env;
 
-        env.objs[args[0].str] = new Function(arg_list, args[2 .. $]);
+        if ( cast(Constant)cur_obj )
+        {
+            throw new SExpException("fun: " ~ name ~ " is a constant");
+        }
+        else if ( cast(Builtin)cur_obj )
+        {
+            throw new SExpException("fun: " ~ name ~ " is a built-in function");
+        }
+
+        auto arg_list = Array.transform(exp.exps, &toSymbol);
+
+        env.objs[name] = new Function(arg_list, args[2 .. $]);
 
         return NIL;
     }

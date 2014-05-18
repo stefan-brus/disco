@@ -53,7 +53,7 @@ public class Constants : Singleton!(Constants)
     {
         foreach ( name, val; this.constant_map )
         {
-            Env.global.objs[name] = new Variable(val);
+            Env.global.objs[name] = new Constant(val);
         }
     }
 }

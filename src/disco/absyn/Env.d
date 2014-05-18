@@ -190,9 +190,6 @@ private abstract class Obj
 
 /**
  * Variable
- *
- * Template Params:
- *      T = This variable's data type
  */
 
 public class Variable : Obj
@@ -214,6 +211,26 @@ public class Variable : Obj
     public this ( Value val )
     {
         this.val = val;
+    }
+}
+
+
+/**
+ * Constant
+ */
+
+public class Constant : Variable
+{
+    /**
+     * Constructor
+     *
+     * Params:
+     *      val = The value of this constant
+     */
+
+    public this ( Value val )
+    {
+        super(val);
     }
 }
 
