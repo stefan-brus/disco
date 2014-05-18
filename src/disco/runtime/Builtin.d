@@ -61,6 +61,7 @@ public class BuiltinFunctions : Singleton!(BuiltinFunctions)
         this.fn_map["set"] = &Base().setDg;
         this.fn_map["fun"] = &Base().funDg;
         this.fn_map["if"] = &Base().ifDg;
+        this.fn_map["len"] = &Base().lenDg;
 
         this.fn_map["+"] = &Math().plusDg;
         this.fn_map["-"] = &Math().minusDg;

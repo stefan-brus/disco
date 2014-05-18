@@ -192,4 +192,40 @@ public class Base : Singleton!(Base)
                 throw new SExpException("if: unknown condition type");
         }
     }
+
+
+    /**
+     * "len" function
+     *
+     * Returns the length of the value of an S-Expression
+     */
+
+    public Value lenDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length != 1 )
+        {
+            throw new SExpException("len: expected 1 argument");
+        }
+    }
+    body
+    {
+        if ( cast(SExp)args[0] )
+        {
+            auto val = Evaluator.eval(args[0], env);
+
+            if ( val.type == Type.SExp )
+            {
+                return Value(cast(double)val.val.sexp.exps.length);
+            }
+            else
+            {
+                return Value(cast(double)1);
+            }
+        }
+        else
+        {
+            return Value(cast(double)1);
+        }
+    }
 }
