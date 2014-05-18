@@ -18,7 +18,7 @@ Disco:
 
     Number   <- "-"? ~([0-9]+) ("." ~([0-9]+))*
     Symbol   <- identifier / Operator
-    Operator <- "+" / "-" / "*" / "/"
+    Operator <- "+" / "-" / "*" / "/" / "==" / "!=" / ">=" / "<=" / ">" / "<"
     SExp     < "(" Exp* ")"
 
 `));
