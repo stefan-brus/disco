@@ -11,7 +11,21 @@ module disco.absyn.Val;
  * The value "nil"
  */
 
-public const Value NIL = { Type.Nil, cast(PossibleVals)0 };
+public const Value NIL = { Type.Nil, { number: 0 } };
+
+
+/**
+ * The value "true"
+ */
+
+public const Value TRUE = { Type.Boolean, { boolean: true } };
+
+
+/**
+ * The value "false"
+ */
+
+public const Value FALSE = { Type.Boolean, { boolean: false } };
 
 
 /**
@@ -89,13 +103,13 @@ public struct Value
         static if ( is(T == double) )
         {
             result.type = Type.Number;
+            result.val.number = value;
         }
         else if ( is(T == bool) )
         {
             result.type = Type.Boolean;
+            result.val.boolean = value;
         }
-
-        result.val = cast(PossibleVals)value;
 
         return result;
     }

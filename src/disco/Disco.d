@@ -19,6 +19,8 @@ private import disco.parser.Parser;
 
 private import disco.runtime.Builtin;
 
+private import disco.runtime.Constants;
+
 private import disco.runtime.Eval;
 
 private import disco.util.app.Application;
@@ -79,6 +81,8 @@ public class Disco : Application
     override protected bool appMain ( bool first_run )
     {
         char[] input_buf;
+
+        Constants().setupEnv;
 
         BuiltinFunctions().setupEnv;
 

@@ -1,7 +1,7 @@
 # Common for all targets
 COMMON_SRC = src/disco/absyn/Env.d src/disco/absyn/SExp.d src/disco/absyn/Val.d \
     src/disco/parser/Grammar.d src/disco/parser/Parser.d \
-    src/disco/runtime/Builtin.d src/disco/runtime/Eval.d \
+    src/disco/runtime/Builtin.d src/disco/runtime/Constants.d src/disco/runtime/Eval.d \
     src/disco/util/Array.d \
     src/disco/util/app/Application.d src/disco/util/app/Arguments.d \
     src/disco/util/container/HashMap.d \
