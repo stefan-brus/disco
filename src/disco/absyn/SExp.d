@@ -60,6 +60,16 @@ public abstract class Exp
 
 
     /**
+     * Default constructor
+     */
+
+    public this ( )
+    {
+
+    }
+
+
+    /**
      * Expression factory method
      *
      * Params:
@@ -146,6 +156,20 @@ public class SExp : Exp
     public this ( ParseTree parse_tree )
     {
         super(parse_tree);
+    }
+
+
+    /**
+     * Constructor
+     *
+     * Params:
+     *      exps = The child expressions
+     */
+
+    public this ( Exp[] exps )
+    {
+        super();
+        this.exps = exps;
     }
 
 

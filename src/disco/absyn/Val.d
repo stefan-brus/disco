@@ -8,10 +8,17 @@ module disco.absyn.Val;
 
 
 /**
+ * Imports
+ */
+
+private import disco.absyn.SExp;
+
+
+/**
  * The value "nil"
  */
 
-public const Value NIL = { Type.Nil, { number: 0 } };
+public const Value NIL = { Type.Nil, { sexp: new SExp([]) } };
 
 
 /**
@@ -35,6 +42,7 @@ public const Value FALSE = { Type.Boolean, { boolean: false } };
 public enum Type
 {
     Nil,
+    SExp,
     Number,
     Boolean
 }
@@ -58,6 +66,13 @@ public union PossibleVals
      */
 
     bool boolean;
+
+
+    /**
+     * S-Expression value
+     */
+
+    SExp sexp;
 }
 
 
@@ -94,7 +109,7 @@ public struct Value
     static Value opCall ( T ) ( T value )
     in
     {
-        static assert(is(T == double) || is(T == bool), "Unknown value type");
+        static assert(is(T == double) || is(T == bool) || is(T == SExp), "Unknown value type");
     }
     body
     {
@@ -105,10 +120,15 @@ public struct Value
             result.type = Type.Number;
             result.val.number = value;
         }
-        else if ( is(T == bool) )
+        else static if ( is(T == bool) )
         {
             result.type = Type.Boolean;
             result.val.boolean = value;
+        }
+        else static if ( is(T == SExp) )
+        {
+            result.type = Type.SExp;
+            result.val.sexp = value;
         }
 
         return result;

@@ -228,4 +228,35 @@ public class Base : Singleton!(Base)
             return Value(cast(double)1);
         }
     }
+
+
+    /**
+     * "cons" function
+     *
+     * Makes an S-Expression of 2 expressions
+     */
+
+    public Value consDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length != 2 )
+        {
+            throw new SExpException("cons: expected 2 arguments");
+        }
+    }
+    body
+    {
+        Exp[] exps = [args[0]];
+
+        if ( cast(SExp)args[1] )
+        {
+            exps ~= (cast(SExp)args[1]).exps;
+        }
+        else
+        {
+            exps ~= args[1];
+        }
+
+        return Value(new SExp(exps));
+    }
 }

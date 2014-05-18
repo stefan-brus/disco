@@ -120,6 +120,14 @@ public class Disco : Application
             {
                 writefln("%s", val.val.number);
             }
+            else if ( val.type == Type.SExp )
+            {
+                writefln("%s", val.val.sexp.str);
+            }
+            else
+            {
+                throw new SExpException("Main: Unknown expression type");
+            }
         }
 
         return true;
