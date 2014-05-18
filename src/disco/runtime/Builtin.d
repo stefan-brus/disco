@@ -2,9 +2,9 @@
  * This class initializes the built-in functions of Disco
  *
  * Featured functions:
- *      (set var exp): sets the variable var to the value of the expression exp
- *      (fun fn-name (args) exps...): defines the function fn-name with the arguments args and the expression list exps
- *      (if cond exp1 exp2): if cond is true, return the value of exp1, else the value of exp2
+ * See Disco documentation
+ *
+ * TODO: Create some kind of documentation for Disco
  */
 
 module disco.runtime.Builtin;
@@ -39,12 +39,12 @@ public class BuiltinFunctions : Singleton!(BuiltinFunctions)
      * Function name to function delegate map
      */
 
-     private HashMap!(string, BuiltinDg) fn_map;
+    private HashMap!(string, BuiltinDg) fn_map;
 
 
-     /**
-      * Initialize the function map
-      */
+    /**
+     * Initialize the function map
+     */
 
     override protected void init ( )
     {
@@ -53,6 +53,11 @@ public class BuiltinFunctions : Singleton!(BuiltinFunctions)
         this.fn_map["set"] = &setDg;
         this.fn_map["fun"] = &funDg;
         this.fn_map["if"] = &ifDg;
+
+        this.fn_map["+"] = &plusDg;
+        this.fn_map["-"] = &minusDg;
+        this.fn_map["*"] = &mulDg;
+        this.fn_map["/"] = &divDg;
     }
 
 
@@ -181,5 +186,160 @@ public class BuiltinFunctions : Singleton!(BuiltinFunctions)
             default:
                 throw new SExpException("if: unknown condition type");
         }
+    }
+
+
+    /**
+     * "+" function
+     *
+     * Adds an arbitrary number of numeric values
+     */
+
+    public Value plusDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length < 2 )
+        {
+            throw new SExpException("+: expected at least 2 arguments");
+        }
+    }
+    body
+    {
+        double result = 0;
+
+        foreach ( exp; args )
+        {
+            auto val = Evaluator.eval(exp, env);
+
+            if ( val.type != Type.Number )
+            {
+                throw new SExpException("+: arguments must be numbers");
+            }
+
+            result += val.val.number;
+        }
+
+        return Value(result);
+    }
+
+
+    /**
+     * "-" function
+     *
+     * Subtracts an arbitrary number of numeric values
+     */
+
+    public Value minusDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length < 2 )
+        {
+            throw new SExpException("-: expected at least 2 arguments");
+        }
+    }
+    body
+    {
+        auto first_val = Evaluator.eval(args[0], env);
+
+        if ( first_val.type != Type.Number )
+        {
+            throw new SExpException("-: arguments must be numbers");
+        }
+
+        double result = first_val.val.number;
+
+        foreach ( exp; args[1 .. $] )
+        {
+            auto val = Evaluator.eval(exp, env);
+
+            if ( val.type != Type.Number )
+            {
+                throw new SExpException("-: arguments must be numbers");
+            }
+
+            result -= val.val.number;
+        }
+
+        return Value(result);
+    }
+
+
+    /**
+     * "*" function
+     *
+     * Multiplies an arbitrary number of numeric values
+     */
+
+    public Value mulDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length < 2 )
+        {
+            throw new SExpException("*: expected at least 2 arguments");
+        }
+    }
+    body
+    {
+        double result = 1;
+
+        foreach ( exp; args )
+        {
+            auto val = Evaluator.eval(exp, env);
+
+            if ( val.type != Type.Number )
+            {
+                throw new SExpException("*: arguments must be numbers");
+            }
+
+            result *= val.val.number;
+        }
+
+        return Value(result);
+    }
+
+
+    /**
+     * "/" function
+     *
+     * Divides an arbitrary number of numeric values
+     */
+
+    public Value divDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length < 2 )
+        {
+            throw new SExpException("/: expected at least 2 arguments");
+        }
+    }
+    body
+    {
+        auto first_val = Evaluator.eval(args[0], env);
+
+        if ( first_val.type != Type.Number )
+        {
+            throw new SExpException("/: arguments must be numbers");
+        }
+
+        double result = first_val.val.number;
+
+        foreach ( exp; args[1 .. $] )
+        {
+            auto val = Evaluator.eval(exp, env);
+
+            if ( val.type != Type.Number )
+            {
+                throw new SExpException("/: arguments must be numbers");
+            }
+
+            if ( val.val.number == 0 )
+            {
+                throw new SExpException("/: division by 0");
+            }
+
+            result /= val.val.number;
+        }
+
+        return Value(result);
     }
 }

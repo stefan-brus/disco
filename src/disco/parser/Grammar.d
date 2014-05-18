@@ -14,10 +14,11 @@ private import pegged.grammar;
 mixin(grammar(`
 Disco:
 
-    Exp      < Symbol / Number / SExp
+    Exp      < Number / Symbol / SExp
 
-    Symbol   <- identifier
     Number   <- "-"? ~([0-9]+) ("." ~([0-9]+))*
+    Symbol   <- identifier / Operator
+    Operator <- "+" / "-" / "*" / "/"
     SExp     < "(" Exp* ")"
 
 `));
