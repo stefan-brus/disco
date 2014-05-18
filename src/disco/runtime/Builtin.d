@@ -50,21 +50,23 @@ public class BuiltinFunctions : Singleton!(BuiltinFunctions)
     {
         this.fn_map = new HashMap!(string, BuiltinDg);
 
-        this.fn_map["set"] = &setDg;
-        this.fn_map["fun"] = &funDg;
-        this.fn_map["if"] = &ifDg;
+        this.fn_map["eval"] = &this.evalDg;
 
-        this.fn_map["+"] = &plusDg;
-        this.fn_map["-"] = &minusDg;
-        this.fn_map["*"] = &mulDg;
-        this.fn_map["/"] = &divDg;
+        this.fn_map["set"] = &this.setDg;
+        this.fn_map["fun"] = &this.funDg;
+        this.fn_map["if"] = &this.ifDg;
 
-        this.fn_map["=="] = &eqDg;
-        this.fn_map["!="] = &notEqDg;
-        this.fn_map[">"] = &gtDg;
-        this.fn_map["<"] = &ltDg;
-        this.fn_map[">="] = &gtEqDg;
-        this.fn_map["<="] = &ltEqDg;
+        this.fn_map["+"] = &this.plusDg;
+        this.fn_map["-"] = &this.minusDg;
+        this.fn_map["*"] = &this.mulDg;
+        this.fn_map["/"] = &this.divDg;
+
+        this.fn_map["=="] = &this.eqDg;
+        this.fn_map["!="] = &this.notEqDg;
+        this.fn_map[">"] = &this.gtDg;
+        this.fn_map["<"] = &this.ltDg;
+        this.fn_map[">="] = &this.gtEqDg;
+        this.fn_map["<="] = &this.ltEqDg;
     }
 
 
@@ -78,6 +80,33 @@ public class BuiltinFunctions : Singleton!(BuiltinFunctions)
         {
             Env.global.objs[name] = new Builtin(dg);
         }
+    }
+
+
+    /**
+     * "eval" function
+     *
+     * Evaluates the given expressions in order, returns the value of the last one
+     */
+
+    private Value evalDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length < 1 )
+        {
+            throw new SExpException("eval: expected at least 1 argument");
+        }
+    }
+    body
+    {
+        Value retval;
+
+        foreach ( arg; args )
+        {
+            retval = Evaluator.eval(arg, env);
+        }
+
+        return retval;
     }
 
 
