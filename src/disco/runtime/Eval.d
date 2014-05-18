@@ -52,6 +52,11 @@ public class Evaluator
         {
             auto exps = (cast(SExp)exp).exps;
 
+            if ( exps.length == 0 )
+            {
+                return NIL;
+            }
+
             if ( !cast(Symbol)exps[0] )
             {
                 throw new SExpException("First expression in a function call must be a symbol");
