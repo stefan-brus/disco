@@ -72,7 +72,7 @@ public union PossibleVals
      * S-Expression value
      */
 
-    SExp sexp;
+    Exp sexp;
 }
 
 
@@ -109,7 +109,7 @@ public struct Value
     static Value opCall ( T ) ( T value )
     in
     {
-        static assert(is(T == double) || is(T == bool) || is(T == SExp), "Unknown value type");
+        static assert(is(T == double) || is(T == bool) || is(T : Exp), "Unknown value type");
     }
     body
     {
@@ -125,7 +125,7 @@ public struct Value
             result.type = Type.Boolean;
             result.val.boolean = value;
         }
-        else static if ( is(T == SExp) )
+        else static if ( is(T : Exp) )
         {
             result.type = Type.SExp;
             result.val.sexp = value;

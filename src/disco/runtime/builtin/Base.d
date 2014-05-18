@@ -216,7 +216,16 @@ public class Base : Singleton!(Base)
 
             if ( val.type == Type.SExp )
             {
-                return Value(cast(double)val.val.sexp.exps.length);
+                auto sexp = cast(SExp)val.val.sexp;
+
+                if ( sexp )
+                {
+                    return Value(cast(double)sexp.exps.length);
+                }
+                else
+                {
+                    return Value(cast(double)1);
+                }
             }
             else
             {
@@ -258,5 +267,59 @@ public class Base : Singleton!(Base)
         }
 
         return Value(new SExp(exps));
+    }
+
+
+    /**
+     * "car" function
+     *
+     * Gets the first value of an S-Expression
+     *
+     * Result type of evaluating the argument must be an S-Expression
+     */
+
+    public Value carDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length != 1 )
+        {
+            throw new SExpException("car: expected 1 argument");
+        }
+
+        if ( !cast(SExp)args[0] )
+        {
+            throw new SExpException("car: argument must be an S-Expression");
+        }
+    }
+    body
+    {
+        auto sexp = cast(SExp)args[0];
+
+        if ( sexp.exps.length == 0 )
+        {
+            return NIL;
+        }
+        else
+        {
+            auto val = Evaluator.eval(sexp, env);
+
+            if ( val.type == Type.SExp )
+            {
+                auto val_sexp = cast(SExp)val.val.sexp;
+
+                if ( val_sexp )
+                {
+                    return val_sexp.exps.length > 0 ? Value(val_sexp.exps[0]) : NIL;
+                }
+                else
+                {
+                    return val;
+                }
+            }
+            else
+            {
+                return val;
+            }
+        }
     }
 }
