@@ -97,6 +97,11 @@ public class Disco : Application
 
             debug ( Parser ) writefln("%s", pt);
 
+            if ( !pt.successful )
+            {
+                throw new SExpException("Parse error. Check your parentheses.");
+            }
+
             auto exp = Exp.create(pt);
 
             debug ( ExpTree ) writefln("%s", exp.str);
