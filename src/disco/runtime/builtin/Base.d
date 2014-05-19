@@ -46,7 +46,7 @@ public class Base : Singleton!(Base)
 
         foreach ( arg; args )
         {
-            retval = Evaluator.eval(arg, env);
+            retval = Evaluator.eval(Value.toExp(Evaluator.eval(arg, env)), env);
         }
 
         return retval;
