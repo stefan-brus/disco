@@ -381,4 +381,42 @@ public class Base : Singleton!(Base)
             }
         }
     }
+
+
+    /**
+     * "append" function
+     *
+     * Makes an S-Expression of 2 expressions
+     */
+
+    public Value appendDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length != 2 )
+        {
+            throw new SExpException("append: expected 2 arguments");
+        }
+
+        if ( !cast(SExp)args[0] )
+        {
+            throw new SExpException("append: first argument must be an S-Expression");
+        }
+    }
+    body
+    {
+        Exp[] exps;
+
+        auto result = cast(SExp)Value.toExp(Evaluator.eval(args[0], env));
+
+        if ( !result )
+        {
+            throw new SExpException("append: first argument must evaluate to an S-Expression");
+        }
+
+        auto exp2 = Value.toExp(Evaluator.eval(args[1], env));
+
+        result.exps ~= exp2;
+
+        return Value(result);
+    }
 }
