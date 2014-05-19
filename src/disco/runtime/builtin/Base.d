@@ -466,4 +466,121 @@ public class Base : Singleton!(Base)
     {
         return Value(args[0]);
     }
+
+
+    /**
+     * "isNil" function
+     *
+     * Checks if the given expression evaluates to nil
+     */
+
+    public Value isNilDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length != 1 )
+        {
+            throw new SExpException("isNil: expected 1 argument");
+        }
+    }
+    body
+    {
+        auto val = Evaluator.eval(args[0], env);
+
+        if ( val.type == Type.Nil ||
+            (val.type == Type.SExp && cast(SExp)val.val.sexp && (cast(SExp)val.val.sexp).exps.length == 0) )
+        {
+            return Value(true);
+        }
+        else
+        {
+            return Value(false);
+        }
+    }
+
+
+    /**
+     * "isSExp" function
+     *
+     * Checks if the given expression evaluates to an S-Expression
+     */
+
+    public Value isSExpDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length != 1 )
+        {
+            throw new SExpException("isSExp: expected 1 argument");
+        }
+    }
+    body
+    {
+        auto val = Evaluator.eval(args[0], env);
+
+        if ( val.type == Type.Nil || (val.type == Type.SExp && cast(SExp)val.val.sexp) )
+        {
+            return Value(true);
+        }
+        else
+        {
+            return Value(false);
+        }
+    }
+
+
+    /**
+     * "isNum" function
+     *
+     * Checks if the given expression evaluates to a number
+     */
+
+    public Value isNumDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length != 1 )
+        {
+            throw new SExpException("isNum: expected 1 argument");
+        }
+    }
+    body
+    {
+        auto val = Evaluator.eval(args[0], env);
+
+        if ( val.type == Type.Number )
+        {
+            return Value(true);
+        }
+        else
+        {
+            return Value(false);
+        }
+    }
+
+
+    /**
+     * "isBool" function
+     *
+     * Checks if the given expression evaluates to a boolean
+     */
+
+    public Value isBoolDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length != 1 )
+        {
+            throw new SExpException("isBool: expected 1 argument");
+        }
+    }
+    body
+    {
+        auto val = Evaluator.eval(args[0], env);
+
+        if ( val.type == Type.Boolean )
+        {
+            return Value(true);
+        }
+        else
+        {
+            return Value(false);
+        }
+    }
 }

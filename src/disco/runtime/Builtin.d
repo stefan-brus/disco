@@ -68,6 +68,10 @@ public class BuiltinFunctions : Singleton!(BuiltinFunctions)
         this.fn_map["append"] = &Base().appendDg;
         this.fn_map["list"] = &Base().listDg;
         this.fn_map["quote"] = &Base().quoteDg;
+        this.fn_map["isNil"] = &Base().isNilDg;
+        this.fn_map["isSExp"] = &Base().isSExpDg;
+        this.fn_map["isNum"] = &Base().isNumDg;
+        this.fn_map["isBool"] = &Base().isBoolDg;
 
         this.fn_map["+"] = &Math().plusDg;
         this.fn_map["-"] = &Math().minusDg;
