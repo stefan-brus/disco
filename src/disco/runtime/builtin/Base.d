@@ -255,15 +255,20 @@ public class Base : Singleton!(Base)
     }
     body
     {
-        Exp[] exps = [args[0]];
+        Exp[] exps;
 
-        if ( cast(SExp)args[1] )
+        auto exp1 = Value.toExp(Evaluator.eval(args[0], env));
+        auto exp2 = Value.toExp(Evaluator.eval(args[1], env));
+
+        exps ~= exp1;
+
+        if ( cast(SExp)exp2 )
         {
-            exps ~= (cast(SExp)args[1]).exps;
+            exps ~= (cast(SExp)exp2).exps;
         }
         else
         {
-            exps ~= args[1];
+            exps ~= exp2;
         }
 
         return Value(new SExp(exps));

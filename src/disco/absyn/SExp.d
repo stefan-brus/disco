@@ -242,6 +242,20 @@ public class Symbol : Exp
 
 
     /**
+     * Constructor
+     *
+     * Params:
+     *      str = The string of this symbol
+     */
+
+    public this ( string str )
+    {
+        super();
+        this._str = str;
+    }
+
+
+    /**
      * To string implementation
      */
 
@@ -274,6 +288,13 @@ public class Symbol : Exp
 public class Number : Exp
 {
     /**
+     * The number value
+     */
+
+    public double num;
+
+
+    /**
      * Constructor
      *
      * Params:
@@ -287,10 +308,17 @@ public class Number : Exp
 
 
     /**
-     * The number value
+     * Constructor
+     *
+     * Params:
+     *      num = The number value
      */
 
-    public double num;
+    public this ( double num )
+    {
+        super();
+        this.num = num;
+    }
 
 
     /**

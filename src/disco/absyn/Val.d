@@ -133,4 +133,39 @@ public struct Value
 
         return result;
     }
+
+
+    /**
+     * Create an expression from a value
+     *
+     * Params:
+     *      val = The value to turn to an expression
+     *
+     * Returns:
+     *      The created expression
+     */
+
+    static Exp toExp ( Value val )
+    {
+        with ( Type ) switch ( val.type )
+        {
+            case Nil:
+                return new .SExp([]);
+            case SExp:
+                return val.val.sexp;
+            case Number:
+                return new .Number(val.val.number);
+            case Boolean:
+                if ( val.val.boolean )
+                {
+                    return new .Symbol("true");
+                }
+                else
+                {
+                    return new .Symbol("false");
+                }
+            default:
+                throw new SExpException("Unknown value type");
+        }
+    }
 }
