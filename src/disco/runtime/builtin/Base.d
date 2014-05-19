@@ -293,33 +293,24 @@ public class Base : Singleton!(Base)
     }
     body
     {
-        auto sexp = cast(SExp)args[0];
+        auto val = Evaluator.eval(args[0], env);
 
-        if ( sexp.exps.length == 0 )
+        if ( val.type == Type.SExp )
         {
-            return NIL;
-        }
-        else
-        {
-            auto val = Evaluator.eval(sexp, env);
+            auto val_sexp = cast(SExp)val.val.sexp;
 
-            if ( val.type == Type.SExp )
+            if ( val_sexp )
             {
-                auto val_sexp = cast(SExp)val.val.sexp;
-
-                if ( val_sexp )
-                {
-                    return val_sexp.exps.length > 0 ? Value(val_sexp.exps[0]) : NIL;
-                }
-                else
-                {
-                    return val;
-                }
+                return val_sexp.exps.length > 0 ? Value(val_sexp.exps[0]) : NIL;
             }
             else
             {
                 return val;
             }
+        }
+        else
+        {
+            return val;
         }
     }
 
@@ -342,33 +333,24 @@ public class Base : Singleton!(Base)
     }
     body
     {
-        auto sexp = cast(SExp)args[0];
+        auto val = Evaluator.eval(args[0], env);
 
-        if ( sexp.exps.length < 2 )
+        if ( val.type == Type.SExp )
         {
-            return NIL;
-        }
-        else
-        {
-            auto val = Evaluator.eval(sexp, env);
+            auto val_sexp = cast(SExp)val.val.sexp;
 
-            if ( val.type == Type.SExp )
+            if ( val_sexp )
             {
-                auto val_sexp = cast(SExp)val.val.sexp;
-
-                if ( val_sexp )
-                {
-                    return val_sexp.exps.length > 1 ? Value(new SExp(val_sexp.exps[1 .. $])) : NIL;
-                }
-                else
-                {
-                    return NIL;
-                }
+                return val_sexp.exps.length > 1 ? Value(new SExp(val_sexp.exps[1 .. $])) : NIL;
             }
             else
             {
                 return NIL;
             }
+        }
+        else
+        {
+            return NIL;
         }
     }
 
