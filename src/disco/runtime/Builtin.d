@@ -66,6 +66,7 @@ public class BuiltinFunctions : Singleton!(BuiltinFunctions)
         this.fn_map["car"] = &Base().carDg;
         this.fn_map["cdr"] = &Base().cdrDg;
         this.fn_map["append"] = &Base().appendDg;
+        this.fn_map["list"] = &Base().listDg;
 
         this.fn_map["+"] = &Math().plusDg;
         this.fn_map["-"] = &Math().minusDg;

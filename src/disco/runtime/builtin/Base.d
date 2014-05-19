@@ -419,4 +419,31 @@ public class Base : Singleton!(Base)
 
         return Value(result);
     }
+
+
+    /**
+     * "list" function
+     *
+     * Makes an S-Expression of 2 expressions
+     */
+
+    public Value listDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length == 0 )
+        {
+            throw new SExpException("list: expected at least 1 argument");
+        }
+    }
+    body
+    {
+        Exp[] exps;
+
+        foreach ( arg; args )
+        {
+            exps ~= Value.toExp(Evaluator.eval(arg, env));
+        }
+
+        return Value(new SExp(exps));
+    }
 }
