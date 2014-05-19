@@ -446,4 +446,24 @@ public class Base : Singleton!(Base)
 
         return Value(new SExp(exps));
     }
+
+
+    /**
+     * "quote" function
+     *
+     * Returns the literal expression passed to it
+     */
+
+    public Value quoteDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length != 1 )
+        {
+            throw new SExpException("quote: expected 1 argument");
+        }
+    }
+    body
+    {
+        return Value(args[0]);
+    }
 }
