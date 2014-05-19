@@ -290,11 +290,6 @@ public class Base : Singleton!(Base)
         {
             throw new SExpException("car: expected 1 argument");
         }
-
-        if ( !cast(SExp)args[0] )
-        {
-            throw new SExpException("car: argument must be an S-Expression");
-        }
     }
     body
     {
@@ -344,11 +339,6 @@ public class Base : Singleton!(Base)
         {
             throw new SExpException("cdr: expected 1 argument");
         }
-
-        if ( !cast(SExp)args[0] )
-        {
-            throw new SExpException("cdr: argument must be an S-Expression");
-        }
     }
     body
     {
@@ -395,11 +385,6 @@ public class Base : Singleton!(Base)
         if ( args.length != 2 )
         {
             throw new SExpException("append: expected 2 arguments");
-        }
-
-        if ( !cast(SExp)args[0] )
-        {
-            throw new SExpException("append: first argument must be an S-Expression");
         }
     }
     body
