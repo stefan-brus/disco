@@ -327,4 +327,58 @@ public class Base : Singleton!(Base)
             }
         }
     }
+
+
+    /**
+     * "cdr" function
+     *
+     * Gets all but the first sub-expressions of an S-Expression
+     *
+     * Result type of evaluating the argument must be an S-Expression
+     */
+
+    public Value cdrDg ( Exp[] args, ref Env env )
+    in
+    {
+        if ( args.length != 1 )
+        {
+            throw new SExpException("cdr: expected 1 argument");
+        }
+
+        if ( !cast(SExp)args[0] )
+        {
+            throw new SExpException("cdr: argument must be an S-Expression");
+        }
+    }
+    body
+    {
+        auto sexp = cast(SExp)args[0];
+
+        if ( sexp.exps.length < 2 )
+        {
+            return NIL;
+        }
+        else
+        {
+            auto val = Evaluator.eval(sexp, env);
+
+            if ( val.type == Type.SExp )
+            {
+                auto val_sexp = cast(SExp)val.val.sexp;
+
+                if ( val_sexp )
+                {
+                    return val_sexp.exps.length > 1 ? Value(new SExp(val_sexp.exps[1 .. $])) : NIL;
+                }
+                else
+                {
+                    return NIL;
+                }
+            }
+            else
+            {
+                return NIL;
+            }
+        }
+    }
 }
