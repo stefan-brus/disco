@@ -1,4 +1,3 @@
 disco
 =====
-
-A Llisp dialect, implemented in D.
+A lisp dialect written in Haskell.

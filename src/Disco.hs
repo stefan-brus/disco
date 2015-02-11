@@ -1,0 +1,175 @@
+-- Disco language module
+
+module Disco where
+
+import Control.Applicative ((<$>))
+
+import qualified Data.Map as M
+
+import Numeric
+
+import System.IO
+
+import Text.ParserCombinators.Parsec
+
+-----------
+-- TYPES --
+-----------
+
+data Expr =
+    Symbol String
+  | Number NumberType
+  | SExpr [Expr]
+  deriving (Show)
+
+data NumberType =
+    NumberInt Integer
+  | NumberReal Double
+  deriving (Show)
+
+data Result =
+    ResultNum NumberType
+  | ResultLookup String
+  deriving (Show)
+
+type BuiltinFunc = [Expr] -> Either String Result
+
+------------------------
+-- LANGUAGE CONSTANTS --
+------------------------
+
+operators :: [String]
+operators = [
+  "+"
+  ]
+
+-----------------------
+-- BUILTIN FUNCTIONS --
+-----------------------
+
+-- Map of builtin functions
+builtins :: M.Map String BuiltinFunc
+builtins = M.fromList [
+  ("+",btinAdd)
+  ]
+
+-- Built in add function '+'
+btinAdd :: [Expr] -> Either String Result
+btinAdd [x1,x2] = case eval x1 of
+  Right (ResultNum n1) -> case eval x2 of
+    Right (ResultNum n2) -> Right $ addNums n1 n2
+    Right _ -> Left "+: arguments must be numbers."
+    Left err' -> Left $ "+ arg 2: " ++ err'
+  Right _ -> Left "+: arguments must be numbers."
+  Left err -> Left $ "+ arg 1: " ++ err
+  where
+    addNums :: NumberType -> NumberType -> Result
+    addNums (NumberInt i1) (NumberInt i2) = ResultNum $ NumberInt (i1 + i2)
+    addNums (NumberReal r1) (NumberReal r2) = ResultNum $ NumberReal (r1 + r2)
+    addNums (NumberInt i) (NumberReal r) = ResultNum $ NumberReal (fromInteger i + r)
+    addNums (NumberReal r) (NumberInt i) = ResultNum $ NumberReal (fromInteger i + r)
+
+btinAdd _ = Left "+: expects 2 arguments."
+
+-------------------------
+-- EVALUATOR FUNCTIONS --
+-------------------------
+
+-- Evaluate an expression
+eval :: Expr -> Either String Result
+eval (Symbol s) = Right (ResultLookup s)
+eval (Number n) = Right (ResultNum n)
+eval (SExpr (fn:args)) = case eval fn of
+  Right (ResultLookup fn) -> evalFunc fn args
+  _ -> Left $ show fn ++ " is not a function."
+
+-- Evaluate a function call
+evalFunc :: String -> [Expr] -> Either String Result
+evalFunc name args = case M.lookup name builtins of
+  Just fn -> fn args
+  Nothing -> Left $ name ++ " is not a function."
+
+-- Print the result of evaluating an expression
+printResult :: Result -> String
+printResult (ResultNum (NumberInt i)) = show i
+printResult (ResultNum (NumberReal r)) = show r
+printResult r = show r
+
+----------------------
+-- PARSER FUNCTIONS --
+----------------------
+
+-- Parse a line of input
+inputLine :: Parser Expr
+inputLine = do
+  whitespace
+  expr
+
+-- Parse an expression
+expr :: Parser Expr
+expr = sexpr <|> number <|> symbol
+
+-- Parse an S-expression
+sexpr :: Parser Expr
+sexpr = do
+  skip '('
+  es <- expr `sepBy1` whitespace
+  skip ')'
+  return $ SExpr es
+
+-- Parse a number
+number :: Parser Expr
+number = do
+  neg <- option "" $ return <$> char '-'
+  int <- many1 digit
+  com <- option "" $ return <$> char '.'
+  dec <- if null com then return "" else many1 digit
+  return $ mkNumber (null com) . head $ fst <$> (readSigned readFloat $ neg ++ int ++ com ++ dec)
+  where
+    mkNumber True x = Number . NumberInt $ floor x
+    mkNumber False x = Number $ NumberReal x
+
+-- Parse a symbol
+symbol :: Parser Expr
+symbol = operator <|> identifier
+
+-- Parse an operator
+operator :: Parser Expr
+operator = do
+  op <- choice $ map string operators
+  return $ Symbol op
+
+-- Parse an identifier
+identifier :: Parser Expr
+identifier = do
+  c <- letter
+  rest <- many alphaNum
+  return $ Symbol (c:rest)
+
+-- Consume whitespace
+whitespace :: Parser ()
+whitespace = skipMany $ oneOf " \n\r\t"
+
+-- Skip a character
+skip :: Char -> Parser ()
+skip c = do
+  _ <- char c
+  return ()
+
+--------------------
+-- REPL FUNCTIONS --
+--------------------
+
+-- Run the disco REPL
+runDiscoREPL :: IO ()
+runDiscoREPL = do
+  putStr "> "
+  hFlush stdout
+  input <- getLine
+  case parse inputLine "" input of
+    Left err -> putStrLn $ "Parse error: " ++ show err
+    Right expr -> case eval expr of
+      Left err' -> putStrLn $ "Evaluatlion error: " ++ err'
+      Right res -> putStrLn $ printResult res
+  --putStrLn . show $ parse inputLine "" input
+  runDiscoREPL
