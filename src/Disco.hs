@@ -39,7 +39,7 @@ type BuiltinFunc = [Expr] -> Either String Result
 ------------------------
 
 operators :: [String]
-operators = ["+", "-", "*"]
+operators = ["+", "-", "*", "/"]
 
 -----------------------
 -- BUILTIN FUNCTIONS --
@@ -50,7 +50,8 @@ builtins :: M.Map String BuiltinFunc
 builtins = M.fromList [
   ("+",btinAdd),
   ("-",btinSub),
-  ("*",btinMul)
+  ("*",btinMul),
+  ("/",btinDiv)
   ]
 
 -- Built in add function '+'
@@ -84,16 +85,31 @@ btinSub exprs = case evalExprs exprs of
 -- Built in multiply function '*'
 btinMul :: BuiltinFunc
 btinMul exprs = case evalExprs exprs of
-  Right args@[ResultNum n1, ResultNum n2] -> Right $ evalSub n1 n2
+  Right args@[ResultNum n1, ResultNum n2] -> Right $ evalMul n1 n2
   Right [x1,x2] -> Left "*: arguments must be numbers"
   Right xs -> Left "*: expects 2 arguments"
   Left err -> Left err
   where
-    evalSub :: NumberType -> NumberType -> Result
-    evalSub (NumberInt i1) (NumberInt i2) = ResultNum . NumberInt $ i1 * i2
-    evalSub (NumberReal r1) (NumberReal r2) = ResultNum . NumberReal $ r1 * r2
-    evalSub (NumberInt i) (NumberReal r) = ResultNum . NumberReal $ fromInteger i * r
-    evalSub (NumberReal r) (NumberInt i) = ResultNum . NumberReal $ r * fromInteger i
+    evalMul :: NumberType -> NumberType -> Result
+    evalMul (NumberInt i1) (NumberInt i2) = ResultNum . NumberInt $ i1 * i2
+    evalMul (NumberReal r1) (NumberReal r2) = ResultNum . NumberReal $ r1 * r2
+    evalMul (NumberInt i) (NumberReal r) = ResultNum . NumberReal $ fromInteger i * r
+    evalMul (NumberReal r) (NumberInt i) = ResultNum . NumberReal $ r * fromInteger i
+
+-- Built in divide function '/'
+btinDiv :: BuiltinFunc
+btinDiv exprs = case evalExprs exprs of
+  Right [_, ResultNum (NumberInt 0)] -> Left "/: division by zero"
+  Right args@[ResultNum n1, ResultNum n2] -> Right $ evalDiv n1 n2
+  Right [x1,x2] -> Left "/: arguments must be numbers"
+  Right xs -> Left "/: expects 2 arguments"
+  Left err -> Left err
+  where
+    evalDiv :: NumberType -> NumberType -> Result
+    evalDiv (NumberInt i1) (NumberInt i2) = ResultNum . NumberReal $ fromInteger i1 / fromInteger i2
+    evalDiv (NumberReal r1) (NumberReal r2) = ResultNum . NumberReal $ r1 / r2
+    evalDiv (NumberInt i) (NumberReal r) = ResultNum . NumberReal $ fromInteger i / r
+    evalDiv (NumberReal r) (NumberInt i) = ResultNum . NumberReal $ r / fromInteger i
 
 -------------------------
 -- EVALUATOR FUNCTIONS --
