@@ -141,7 +141,9 @@ expr = try sexpr <|> try number <|> symbol
 sexpr :: Parser Expr
 sexpr = do
   skip '('
-  es <- expr `sepBy1` whitespace
+  whitespace
+  es <- expr `sepEndBy1` whitespace
+  whitespace
   skip ')'
   return $ SExpr es
 
