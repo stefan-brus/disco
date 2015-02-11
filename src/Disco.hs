@@ -39,9 +39,7 @@ type BuiltinFunc = [Expr] -> Either String Result
 ------------------------
 
 operators :: [String]
-operators = [
-  "+"
-  ]
+operators = ["+", "-"]
 
 -----------------------
 -- BUILTIN FUNCTIONS --
@@ -50,30 +48,45 @@ operators = [
 -- Map of builtin functions
 builtins :: M.Map String BuiltinFunc
 builtins = M.fromList [
-  ("+",btinAdd)
+  ("+",btinAdd),
+  ("-",btinSub)
   ]
 
 -- Built in add function '+'
-btinAdd :: [Expr] -> Either String Result
-btinAdd [x1,x2] = case eval x1 of
-  Right (ResultNum n1) -> case eval x2 of
-    Right (ResultNum n2) -> Right $ addNums n1 n2
-    Right _ -> Left "+: arguments must be numbers."
-    Left err' -> Left $ "+ arg 2: " ++ err'
-  Right _ -> Left "+: arguments must be numbers."
-  Left err -> Left $ "+ arg 1: " ++ err
+btinAdd :: BuiltinFunc
+btinAdd exprs = case evalExprs exprs of
+  Right args@[ResultNum n1, ResultNum n2] -> Right $ evalAdd n1 n2
+  Right [x1,x2] -> Left "+: arguments must be numbers"
+  Right xs -> Left "+: expects 2 arguments"
+  Left err -> Left err
   where
-    addNums :: NumberType -> NumberType -> Result
-    addNums (NumberInt i1) (NumberInt i2) = ResultNum $ NumberInt (i1 + i2)
-    addNums (NumberReal r1) (NumberReal r2) = ResultNum $ NumberReal (r1 + r2)
-    addNums (NumberInt i) (NumberReal r) = ResultNum $ NumberReal (fromInteger i + r)
-    addNums (NumberReal r) (NumberInt i) = ResultNum $ NumberReal (fromInteger i + r)
+    evalAdd :: NumberType -> NumberType -> Result
+    evalAdd (NumberInt i1) (NumberInt i2) = ResultNum . NumberInt $ i1 + i2
+    evalAdd (NumberReal r1) (NumberReal r2) = ResultNum . NumberReal $ r1 + r2
+    evalAdd (NumberInt i) (NumberReal r) = ResultNum . NumberReal $ fromInteger i + r
+    evalAdd (NumberReal r) (NumberInt i) = ResultNum . NumberReal $ r + fromInteger i
 
-btinAdd _ = Left "+: expects 2 arguments."
+-- Built in subtract function '-'
+btinSub :: BuiltinFunc
+btinSub exprs = case evalExprs exprs of
+  Right args@[ResultNum n1, ResultNum n2] -> Right $ evalSub n1 n2
+  Right [x1,x2] -> Left "-: arguments must be numbers"
+  Right xs -> Left "-: expects 2 arguments"
+  Left err -> Left err
+  where
+    evalSub :: NumberType -> NumberType -> Result
+    evalSub (NumberInt i1) (NumberInt i2) = ResultNum . NumberInt $ i1 - i2
+    evalSub (NumberReal r1) (NumberReal r2) = ResultNum . NumberReal $ r1 - r2
+    evalSub (NumberInt i) (NumberReal r) = ResultNum . NumberReal $ fromInteger i - r
+    evalSub (NumberReal r) (NumberInt i) = ResultNum . NumberReal $ r - fromInteger i
 
 -------------------------
 -- EVALUATOR FUNCTIONS --
 -------------------------
+
+-- Evaluate a list of expressions, stop if one fails
+evalExprs :: [Expr] -> Either String [Result]
+evalExprs = mapM eval
 
 -- Evaluate an expression
 eval :: Expr -> Either String Result
@@ -107,7 +120,7 @@ inputLine = do
 
 -- Parse an expression
 expr :: Parser Expr
-expr = sexpr <|> number <|> symbol
+expr = sexpr <|> symbol <|> number
 
 -- Parse an S-expression
 sexpr :: Parser Expr
@@ -116,18 +129,6 @@ sexpr = do
   es <- expr `sepBy1` whitespace
   skip ')'
   return $ SExpr es
-
--- Parse a number
-number :: Parser Expr
-number = do
-  neg <- option "" $ return <$> char '-'
-  int <- many1 digit
-  com <- option "" $ return <$> char '.'
-  dec <- if null com then return "" else many1 digit
-  return $ mkNumber (null com) . head $ fst <$> (readSigned readFloat $ neg ++ int ++ com ++ dec)
-  where
-    mkNumber True x = Number . NumberInt $ floor x
-    mkNumber False x = Number $ NumberReal x
 
 -- Parse a symbol
 symbol :: Parser Expr
@@ -145,6 +146,18 @@ identifier = do
   c <- letter
   rest <- many alphaNum
   return $ Symbol (c:rest)
+
+-- Parse a number
+number :: Parser Expr
+number = do
+  neg <- option "" $ return <$> char '-'
+  int <- many1 digit
+  com <- option "" $ return <$> char '.'
+  dec <- if null com then return "" else many1 digit
+  return $ mkNumber (null com) . head $ fst <$> (readSigned readFloat $ neg ++ int ++ com ++ dec)
+  where
+    mkNumber True x = Number . NumberInt $ floor x
+    mkNumber False x = Number $ NumberReal x
 
 -- Consume whitespace
 whitespace :: Parser ()
@@ -169,7 +182,7 @@ runDiscoREPL = do
   case parse inputLine "" input of
     Left err -> putStrLn $ "Parse error: " ++ show err
     Right expr -> case eval expr of
-      Left err' -> putStrLn $ "Evaluatlion error: " ++ err'
+      Left err' -> putStrLn $ "Evaluation error: " ++ err'
       Right res -> putStrLn $ printResult res
   --putStrLn . show $ parse inputLine "" input
   runDiscoREPL
