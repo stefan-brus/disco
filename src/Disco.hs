@@ -39,7 +39,7 @@ type BuiltinFunc = [Expr] -> Either String Result
 ------------------------
 
 operators :: [String]
-operators = ["+", "-"]
+operators = ["+", "-", "*"]
 
 -----------------------
 -- BUILTIN FUNCTIONS --
@@ -49,7 +49,8 @@ operators = ["+", "-"]
 builtins :: M.Map String BuiltinFunc
 builtins = M.fromList [
   ("+",btinAdd),
-  ("-",btinSub)
+  ("-",btinSub),
+  ("*",btinMul)
   ]
 
 -- Built in add function '+'
@@ -79,6 +80,20 @@ btinSub exprs = case evalExprs exprs of
     evalSub (NumberReal r1) (NumberReal r2) = ResultNum . NumberReal $ r1 - r2
     evalSub (NumberInt i) (NumberReal r) = ResultNum . NumberReal $ fromInteger i - r
     evalSub (NumberReal r) (NumberInt i) = ResultNum . NumberReal $ r - fromInteger i
+
+-- Built in multiply function '*'
+btinMul :: BuiltinFunc
+btinMul exprs = case evalExprs exprs of
+  Right args@[ResultNum n1, ResultNum n2] -> Right $ evalSub n1 n2
+  Right [x1,x2] -> Left "*: arguments must be numbers"
+  Right xs -> Left "*: expects 2 arguments"
+  Left err -> Left err
+  where
+    evalSub :: NumberType -> NumberType -> Result
+    evalSub (NumberInt i1) (NumberInt i2) = ResultNum . NumberInt $ i1 * i2
+    evalSub (NumberReal r1) (NumberReal r2) = ResultNum . NumberReal $ r1 * r2
+    evalSub (NumberInt i) (NumberReal r) = ResultNum . NumberReal $ fromInteger i * r
+    evalSub (NumberReal r) (NumberInt i) = ResultNum . NumberReal $ r * fromInteger i
 
 -------------------------
 -- EVALUATOR FUNCTIONS --
@@ -120,7 +135,7 @@ inputLine = do
 
 -- Parse an expression
 expr :: Parser Expr
-expr = sexpr <|> symbol <|> number
+expr = try sexpr <|> try number <|> symbol
 
 -- Parse an S-expression
 sexpr :: Parser Expr
