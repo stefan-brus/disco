@@ -58,7 +58,8 @@ builtins = M.fromList [
   ("*",btinMul),
   ("/",btinDiv),
 
-  ("quote",btinQuote)
+  ("quote",btinQuote),
+  ("eval",btinEval)
   ]
 
 -- Built in add function '+'
@@ -128,6 +129,13 @@ btinQuote [SExpr exprs] = Right $ ResultSExpr exprs
 btinQuote e | length e == 1 = Left $ "quote: unknown expression: " ++ show (head e)
 btinQuote _ = Left "quote: expects 1 argument"
 
+-- Bult in eval function, evaluate the result of evaluating the argument
+btinEval :: BuiltinFunc
+btinEval [e] = case eval e of
+  Right res -> eval $ resultToExpr res
+  Left err -> Left err
+btinEval _ = Left "eval: expects 1 argument"
+
 -------------------------
 -- EVALUATOR FUNCTIONS --
 -------------------------
@@ -158,6 +166,14 @@ printResult :: Result -> String
 printResult (ResultNum (NumberInt i)) = show i
 printResult (ResultNum (NumberReal r)) = show r
 printResult r = show r
+
+-- Convert a result to an expression
+resultToExpr :: Result -> Expr
+resultToExpr (ResultNum n) = Number n
+resultToExpr (ResultChar c) = Character c
+resultToExpr (ResultString s) = LitString s
+resultToExpr (ResultLookup s) = Symbol s
+resultToExpr (ResultSExpr es) = SExpr es
 
 ----------------------
 -- PARSER FUNCTIONS --
