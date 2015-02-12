@@ -34,6 +34,7 @@ data Result =
   | ResultChar Char
   | ResultString String
   | ResultLookup String
+  | ResultSExpr [Expr]
   deriving (Show)
 
 type BuiltinFunc = [Expr] -> Either String Result
@@ -55,15 +56,17 @@ builtins = M.fromList [
   ("+",btinAdd),
   ("-",btinSub),
   ("*",btinMul),
-  ("/",btinDiv)
+  ("/",btinDiv),
+
+  ("quote",btinQuote)
   ]
 
 -- Built in add function '+'
 btinAdd :: BuiltinFunc
 btinAdd exprs = case evalExprs exprs of
-  Right args@[ResultNum n1, ResultNum n2] -> Right $ evalAdd n1 n2
-  Right [x1,x2] -> Left "+: arguments must be numbers"
-  Right xs -> Left "+: expects 2 arguments"
+  Right [ResultNum n1, ResultNum n2] -> Right $ evalAdd n1 n2
+  Right [_,_] -> Left "+: arguments must be numbers"
+  Right _ -> Left "+: expects 2 arguments"
   Left err -> Left err
   where
     evalAdd :: NumberType -> NumberType -> Result
@@ -75,9 +78,9 @@ btinAdd exprs = case evalExprs exprs of
 -- Built in subtract function '-'
 btinSub :: BuiltinFunc
 btinSub exprs = case evalExprs exprs of
-  Right args@[ResultNum n1, ResultNum n2] -> Right $ evalSub n1 n2
-  Right [x1,x2] -> Left "-: arguments must be numbers"
-  Right xs -> Left "-: expects 2 arguments"
+  Right [ResultNum n1, ResultNum n2] -> Right $ evalSub n1 n2
+  Right [_,_] -> Left "-: arguments must be numbers"
+  Right _ -> Left "-: expects 2 arguments"
   Left err -> Left err
   where
     evalSub :: NumberType -> NumberType -> Result
@@ -89,9 +92,9 @@ btinSub exprs = case evalExprs exprs of
 -- Built in multiply function '*'
 btinMul :: BuiltinFunc
 btinMul exprs = case evalExprs exprs of
-  Right args@[ResultNum n1, ResultNum n2] -> Right $ evalMul n1 n2
-  Right [x1,x2] -> Left "*: arguments must be numbers"
-  Right xs -> Left "*: expects 2 arguments"
+  Right [ResultNum n1, ResultNum n2] -> Right $ evalMul n1 n2
+  Right [_,_] -> Left "*: arguments must be numbers"
+  Right _ -> Left "*: expects 2 arguments"
   Left err -> Left err
   where
     evalMul :: NumberType -> NumberType -> Result
@@ -104,9 +107,9 @@ btinMul exprs = case evalExprs exprs of
 btinDiv :: BuiltinFunc
 btinDiv exprs = case evalExprs exprs of
   Right [_, ResultNum (NumberInt 0)] -> Left "/: division by zero"
-  Right args@[ResultNum n1, ResultNum n2] -> Right $ evalDiv n1 n2
-  Right [x1,x2] -> Left "/: arguments must be numbers"
-  Right xs -> Left "/: expects 2 arguments"
+  Right [ResultNum n1, ResultNum n2] -> Right $ evalDiv n1 n2
+  Right [_,_] -> Left "/: arguments must be numbers"
+  Right _ -> Left "/: expects 2 arguments"
   Left err -> Left err
   where
     evalDiv :: NumberType -> NumberType -> Result
@@ -114,6 +117,16 @@ btinDiv exprs = case evalExprs exprs of
     evalDiv (NumberReal r1) (NumberReal r2) = ResultNum . NumberReal $ r1 / r2
     evalDiv (NumberInt i) (NumberReal r) = ResultNum . NumberReal $ fromInteger i / r
     evalDiv (NumberReal r) (NumberInt i) = ResultNum . NumberReal $ r / fromInteger i
+
+-- Bult in quote function, returns the expression as-is
+btinQuote :: BuiltinFunc
+btinQuote [Symbol s] = Right $ ResultLookup s
+btinQuote [Number n] = Right $ ResultNum n
+btinQuote [Character c] = Right $ ResultChar c
+btinQuote [LitString s] = Right $ ResultString s
+btinQuote [SExpr exprs] = Right $ ResultSExpr exprs
+btinQuote e | length e == 1 = Left $ "quote: unknown expression: " ++ show (head e)
+btinQuote _ = Left "quote: expects 1 argument"
 
 -------------------------
 -- EVALUATOR FUNCTIONS --
@@ -130,8 +143,9 @@ eval (Number n) = Right (ResultNum n)
 eval (Character c) = Right (ResultChar c)
 eval (LitString s) = Right (ResultString s)
 eval (SExpr (fn:args)) = case eval fn of
-  Right (ResultLookup fn) -> evalFunc fn args
+  Right (ResultLookup name) -> evalFunc name args
   _ -> Left $ show fn ++ " is not a function."
+eval e = Left $ "Cannot evaluate expression: " ++ show e
 
 -- Evaluate a function call
 evalFunc :: String -> [Expr] -> Either String Result
@@ -153,18 +167,18 @@ printResult r = show r
 inputLine :: Parser Expr
 inputLine = do
   whitespace
-  expr
+  expression
 
 -- Parse an expression
-expr :: Parser Expr
-expr = try sexpr <|> try number <|> try litstring <|> try character <|> symbol
+expression :: Parser Expr
+expression = try sexpr <|> try number <|> try litstring <|> try character <|> symbol
 
 -- Parse an S-expression
 sexpr :: Parser Expr
 sexpr = do
   skip '('
   whitespace
-  es <- expr `sepEndBy1` whitespace
+  es <- expression `sepEndBy1` whitespace
   whitespace
   skip ')'
   return $ SExpr es
