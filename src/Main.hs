@@ -4,5 +4,6 @@ module Main where
 
 import Disco
 
+-- Main function
 main :: IO ()
-main = runDiscoREPL
+main = runDisco
