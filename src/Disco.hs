@@ -19,6 +19,7 @@ import Text.ParserCombinators.Parsec
 data Expr =
     Symbol String
   | Number NumberType
+  | Boolean Bool
   | Character Char
   | LitString String
   | SExpr [Expr]
@@ -31,6 +32,7 @@ data NumberType =
 
 data Result =
     ResultNum NumberType
+  | ResultBool Bool
   | ResultChar Char
   | ResultString String
   | ResultLookup String
@@ -39,12 +41,29 @@ data Result =
 
 type BuiltinFunc = [Expr] -> Either String Result
 
+type Env = M.Map String Expr
+
 ------------------------
 -- LANGUAGE CONSTANTS --
 ------------------------
 
 operators :: [String]
 operators = ["+", "-", "*", "/"]
+
+-----------------
+-- ENVIRONMENT --
+-----------------
+
+-- The initial environment
+initEnv :: Env
+initEnv = M.fromList [
+  ("true",Boolean True),
+  ("false",Boolean False)
+  ]
+
+-- Look something up in the environment
+envGet :: Env -> String -> Maybe Expr
+envGet e = flip M.lookup $ e
 
 -----------------------
 -- BUILTIN FUNCTIONS --
@@ -123,6 +142,7 @@ btinDiv exprs = case evalExprs exprs of
 btinQuote :: BuiltinFunc
 btinQuote [Symbol s] = Right $ ResultLookup s
 btinQuote [Number n] = Right $ ResultNum n
+btinQuote [Boolean b] = Right $ ResultBool b
 btinQuote [Character c] = Right $ ResultChar c
 btinQuote [LitString s] = Right $ ResultString s
 btinQuote [SExpr exprs] = Right $ ResultSExpr exprs
@@ -146,14 +166,22 @@ evalExprs = mapM eval
 
 -- Evaluate an expression
 eval :: Expr -> Either String Result
-eval (Symbol s) = Right (ResultLookup s)
+eval (Symbol s) = evalLookup s
 eval (Number n) = Right (ResultNum n)
+eval (Boolean b) = Right (ResultBool b)
 eval (Character c) = Right (ResultChar c)
 eval (LitString s) = Right (ResultString s)
 eval (SExpr (fn:args)) = case eval fn of
   Right (ResultLookup name) -> evalFunc name args
+  Left err -> Left err
   _ -> Left $ show fn ++ " is not a function."
 eval e = Left $ "Cannot evaluate expression: " ++ show e
+
+-- Evaluate a symbol lookup
+evalLookup :: String -> Either String Result
+evalLookup name = case envGet initEnv name of
+  Just e -> eval e
+  Nothing -> Right $ ResultLookup name
 
 -- Evaluate a function call
 evalFunc :: String -> [Expr] -> Either String Result
@@ -170,6 +198,7 @@ printResult r = show r
 -- Convert a result to an expression
 resultToExpr :: Result -> Expr
 resultToExpr (ResultNum n) = Number n
+resultToExpr (ResultBool b) = Boolean b
 resultToExpr (ResultChar c) = Character c
 resultToExpr (ResultString s) = LitString s
 resultToExpr (ResultLookup s) = Symbol s
