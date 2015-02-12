@@ -19,6 +19,7 @@ import Text.ParserCombinators.Parsec
 data Expr =
     Symbol String
   | Number NumberType
+  | Character Char
   | SExpr [Expr]
   deriving (Show)
 
@@ -29,6 +30,7 @@ data NumberType =
 
 data Result =
     ResultNum NumberType
+  | ResultChar Char
   | ResultLookup String
   deriving (Show)
 
@@ -123,6 +125,7 @@ evalExprs = mapM eval
 eval :: Expr -> Either String Result
 eval (Symbol s) = Right (ResultLookup s)
 eval (Number n) = Right (ResultNum n)
+eval (Character c) = Right (ResultChar c)
 eval (SExpr (fn:args)) = case eval fn of
   Right (ResultLookup fn) -> evalFunc fn args
   _ -> Left $ show fn ++ " is not a function."
@@ -151,7 +154,7 @@ inputLine = do
 
 -- Parse an expression
 expr :: Parser Expr
-expr = try sexpr <|> try number <|> symbol
+expr = try sexpr <|> try number <|> character <|> symbol
 
 -- Parse an S-expression
 sexpr :: Parser Expr
@@ -162,6 +165,26 @@ sexpr = do
   whitespace
   skip ')'
   return $ SExpr es
+
+-- Parse a number
+number :: Parser Expr
+number = do
+  neg <- option "" $ return <$> char '-'
+  int <- many1 digit
+  com <- option "" $ return <$> char '.'
+  dec <- if null com then return "" else many1 digit
+  return $ mkNumber (null com) . head $ fst <$> (readSigned readFloat $ neg ++ int ++ com ++ dec)
+  where
+    mkNumber True x = Number . NumberInt $ floor x
+    mkNumber False x = Number $ NumberReal x
+
+-- Parse a character literal
+character :: Parser Expr
+character = do
+  skip '\''
+  c <- anyChar
+  skip '\''
+  return $ Character c
 
 -- Parse a symbol
 symbol :: Parser Expr
@@ -179,18 +202,6 @@ identifier = do
   c <- letter
   rest <- many alphaNum
   return $ Symbol (c:rest)
-
--- Parse a number
-number :: Parser Expr
-number = do
-  neg <- option "" $ return <$> char '-'
-  int <- many1 digit
-  com <- option "" $ return <$> char '.'
-  dec <- if null com then return "" else many1 digit
-  return $ mkNumber (null com) . head $ fst <$> (readSigned readFloat $ neg ++ int ++ com ++ dec)
-  where
-    mkNumber True x = Number . NumberInt $ floor x
-    mkNumber False x = Number $ NumberReal x
 
 -- Consume whitespace
 whitespace :: Parser ()
