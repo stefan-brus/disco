@@ -20,6 +20,7 @@ data Expr =
     Symbol String
   | Number NumberType
   | Character Char
+  | LitString String
   | SExpr [Expr]
   deriving (Show)
 
@@ -31,6 +32,7 @@ data NumberType =
 data Result =
     ResultNum NumberType
   | ResultChar Char
+  | ResultString String
   | ResultLookup String
   deriving (Show)
 
@@ -126,6 +128,7 @@ eval :: Expr -> Either String Result
 eval (Symbol s) = Right (ResultLookup s)
 eval (Number n) = Right (ResultNum n)
 eval (Character c) = Right (ResultChar c)
+eval (LitString s) = Right (ResultString s)
 eval (SExpr (fn:args)) = case eval fn of
   Right (ResultLookup fn) -> evalFunc fn args
   _ -> Left $ show fn ++ " is not a function."
@@ -154,7 +157,7 @@ inputLine = do
 
 -- Parse an expression
 expr :: Parser Expr
-expr = try sexpr <|> try number <|> character <|> symbol
+expr = try sexpr <|> try number <|> try litstring <|> try character <|> symbol
 
 -- Parse an S-expression
 sexpr :: Parser Expr
@@ -177,6 +180,13 @@ number = do
   where
     mkNumber True x = Number . NumberInt $ floor x
     mkNumber False x = Number $ NumberReal x
+
+-- Parse a string literal
+litstring :: Parser Expr
+litstring = do
+  skip '"'
+  str <- anyChar `manyTill` skip '"'
+  return $ LitString str
 
 -- Parse a character literal
 character :: Parser Expr
