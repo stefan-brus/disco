@@ -187,7 +187,11 @@ inputLine = do
 
 -- Parse an expression
 expression :: Parser Expr
-expression = try sexpr <|> try number <|> try litstring <|> try character <|> symbol
+expression = do
+  bq <- option "" $ return <$> char '`'
+  whitespace
+  res <- try sexpr <|> try number <|> try litstring <|> try character <|> symbol
+  return $ if null bq then res else SExpr [Symbol "quote", res]
 
 -- Parse an S-expression
 sexpr :: Parser Expr
