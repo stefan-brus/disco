@@ -2,6 +2,9 @@
 
 module Disco.Runtime where
 
+import Control.Applicative
+import Control.Monad.State
+
 import qualified Data.Map as M
 
 import Disco.Absyn
@@ -21,7 +24,11 @@ data Result =
   deriving (Show)
 
 
-type BuiltinFunc = [Expr] -> Either String Result
+type BuiltinFunc = [Expr] -> State Env (Either String Result)
+
+data Runtime = Runtime {
+  globalEnv :: Env
+}
 
 ---------------
 -- CONSTANTS --
@@ -51,33 +58,35 @@ builtins = M.fromList [
 -------------------------
 
 -- Evaluate a list of expressions, stop if one fails
-evalExprs :: [Expr] -> Either String [Result]
-evalExprs = mapM eval
+evalExprs :: [Expr] -> State Env (Either String [Result])
+evalExprs = (sequence <$>) . mapM eval
 
 -- Evaluate an expression
-eval :: Expr -> Either String Result
+eval :: Expr -> State Env (Either String Result)
 eval (Symbol s) = evalLookup s
-eval (Number n) = Right (ResultNum n)
-eval (Boolean b) = Right (ResultBool b)
-eval (Character c) = Right (ResultChar c)
-eval (LitString s) = Right (ResultString s)
-eval (SExpr (fn:args)) = case eval fn of
-  Right (ResultLookup name) -> evalFunc name args
-  Left err -> Left err
-  _ -> Left $ show fn ++ " is not a function."
-eval e = Left $ "Cannot evaluate expression: " ++ show e
+eval (Number n) = return $ Right (ResultNum n)
+eval (Boolean b) = return $ Right (ResultBool b)
+eval (Character c) = return $ Right (ResultChar c)
+eval (LitString s) = return $ Right (ResultString s)
+eval (SExpr (fn:args)) = do
+  res <- eval fn
+  case res of
+    Right (ResultLookup name) -> evalFunc name args
+    Left err -> return $ Left err
+    _ -> return . Left $ show fn ++ " is not a function."
+eval e = return . Left $ "Cannot evaluate expression: " ++ show e
 
 -- Evaluate a symbol lookup
-evalLookup :: String -> Either String Result
+evalLookup :: String -> State Env (Either String Result)
 evalLookup name = case envGet constants name of
   Just e -> eval e
-  Nothing -> Right $ ResultLookup name
+  Nothing -> return . Right $ ResultLookup name
 
 -- Evaluate a function call
-evalFunc :: String -> [Expr] -> Either String Result
+evalFunc :: String -> [Expr] -> State Env (Either String Result)
 evalFunc name args = case M.lookup name builtins of
   Just fn -> fn args
-  Nothing -> Left $ name ++ " is not a function."
+  Nothing -> return . Left $ name ++ " is not a function."
 
 -- Print the result of evaluating an expression
 printResult :: Result -> String
@@ -100,11 +109,13 @@ resultToExpr (ResultSExpr es) = SExpr es
 
 -- Built in add function '+'
 btinAdd :: BuiltinFunc
-btinAdd exprs = case evalExprs exprs of
-  Right [ResultNum n1, ResultNum n2] -> Right $ evalAdd n1 n2
-  Right [_,_] -> Left "+: arguments must be numbers"
-  Right _ -> Left "+: expects 2 arguments"
-  Left err -> Left err
+btinAdd exprs = do
+  res <- evalExprs exprs
+  case res of
+    Right [ResultNum n1, ResultNum n2] -> return . Right $ evalAdd n1 n2
+    Right [_,_] -> return $ Left "+: arguments must be numbers"
+    Right _ -> return $ Left "+: expects 2 arguments"
+    Left err -> return $ Left err
   where
     evalAdd :: NumberType -> NumberType -> Result
     evalAdd (NumberInt i1) (NumberInt i2) = ResultNum . NumberInt $ i1 + i2
@@ -114,11 +125,13 @@ btinAdd exprs = case evalExprs exprs of
 
 -- Built in subtract function '-'
 btinSub :: BuiltinFunc
-btinSub exprs = case evalExprs exprs of
-  Right [ResultNum n1, ResultNum n2] -> Right $ evalSub n1 n2
-  Right [_,_] -> Left "-: arguments must be numbers"
-  Right _ -> Left "-: expects 2 arguments"
-  Left err -> Left err
+btinSub exprs = do
+  res <- evalExprs exprs
+  case res of
+    Right [ResultNum n1, ResultNum n2] -> return . Right $ evalSub n1 n2
+    Right [_,_] -> return $ Left "-: arguments must be numbers"
+    Right _ -> return $ Left "-: expects 2 arguments"
+    Left err -> return $ Left err
   where
     evalSub :: NumberType -> NumberType -> Result
     evalSub (NumberInt i1) (NumberInt i2) = ResultNum . NumberInt $ i1 - i2
@@ -128,11 +141,13 @@ btinSub exprs = case evalExprs exprs of
 
 -- Built in multiply function '*'
 btinMul :: BuiltinFunc
-btinMul exprs = case evalExprs exprs of
-  Right [ResultNum n1, ResultNum n2] -> Right $ evalMul n1 n2
-  Right [_,_] -> Left "*: arguments must be numbers"
-  Right _ -> Left "*: expects 2 arguments"
-  Left err -> Left err
+btinMul exprs = do
+  res <- evalExprs exprs
+  case res of
+    Right [ResultNum n1, ResultNum n2] -> return . Right $ evalMul n1 n2
+    Right [_,_] -> return $ Left "*: arguments must be numbers"
+    Right _ -> return $ Left "*: expects 2 arguments"
+    Left err -> return $ Left err
   where
     evalMul :: NumberType -> NumberType -> Result
     evalMul (NumberInt i1) (NumberInt i2) = ResultNum . NumberInt $ i1 * i2
@@ -142,12 +157,14 @@ btinMul exprs = case evalExprs exprs of
 
 -- Built in divide function '/'
 btinDiv :: BuiltinFunc
-btinDiv exprs = case evalExprs exprs of
-  Right [_, ResultNum (NumberInt 0)] -> Left "/: division by zero"
-  Right [ResultNum n1, ResultNum n2] -> Right $ evalDiv n1 n2
-  Right [_,_] -> Left "/: arguments must be numbers"
-  Right _ -> Left "/: expects 2 arguments"
-  Left err -> Left err
+btinDiv exprs = do
+  res <- evalExprs exprs
+  case res of
+    Right [_, ResultNum (NumberInt 0)] -> return $ Left "/: division by zero"
+    Right [ResultNum n1, ResultNum n2] -> return . Right $ evalDiv n1 n2
+    Right [_,_] -> return $ Left "/: arguments must be numbers"
+    Right _ -> return $ Left "/: expects 2 arguments"
+    Left err -> return $ Left err
   where
     evalDiv :: NumberType -> NumberType -> Result
     evalDiv (NumberInt i1) (NumberInt i2) = ResultNum . NumberReal $ fromInteger i1 / fromInteger i2
@@ -157,18 +174,20 @@ btinDiv exprs = case evalExprs exprs of
 
 -- Bult in quote function, returns the expression as-is
 btinQuote :: BuiltinFunc
-btinQuote [Symbol s] = Right $ ResultLookup s
-btinQuote [Number n] = Right $ ResultNum n
-btinQuote [Boolean b] = Right $ ResultBool b
-btinQuote [Character c] = Right $ ResultChar c
-btinQuote [LitString s] = Right $ ResultString s
-btinQuote [SExpr exprs] = Right $ ResultSExpr exprs
-btinQuote e | length e == 1 = Left $ "quote: unknown expression: " ++ show (head e)
-btinQuote _ = Left "quote: expects 1 argument"
+btinQuote [Symbol s] = return . Right $ ResultLookup s
+btinQuote [Number n] = return . Right $ ResultNum n
+btinQuote [Boolean b] = return . Right $ ResultBool b
+btinQuote [Character c] = return . Right $ ResultChar c
+btinQuote [LitString s] = return . Right $ ResultString s
+btinQuote [SExpr exprs] = return . Right $ ResultSExpr exprs
+btinQuote e | length e == 1 = return . Left $ "quote: unknown expression: " ++ show (head e)
+btinQuote _ = return $ Left "quote: expects 1 argument"
 
 -- Bult in eval function, evaluate the result of evaluating the argument
 btinEval :: BuiltinFunc
-btinEval [e] = case eval e of
-  Right res -> eval $ resultToExpr res
-  Left err -> Left err
-btinEval _ = Left "eval: expects 1 argument"
+btinEval [e] = do
+  res <- eval e
+  case res of
+    Right r -> eval $ resultToExpr r
+    Left err -> return $ Left err
+btinEval _ = return $ Left "eval: expects 1 argument"

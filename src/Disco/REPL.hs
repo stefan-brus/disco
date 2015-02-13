@@ -2,6 +2,10 @@
 
 module Disco.REPL where
 
+import Control.Monad.State
+
+import qualified Data.Map as M
+
 import System.IO
 
 import Text.ParserCombinators.Parsec
@@ -9,20 +13,38 @@ import Text.ParserCombinators.Parsec
 import Disco.Runtime
 import Disco.Parser
 
+-----------
+-- TYPES --
+-----------
+
+type REPL = StateT Runtime IO
+
 --------------------
 -- REPL FUNCTIONS --
 --------------------
 
 -- Run the disco REPL
-runDiscoREPL :: IO ()
+runDiscoREPL :: REPL ()
 runDiscoREPL = do
-  putStr "> "
-  hFlush stdout
-  input <- getLine
+  io $ putStr "> "
+  io $ hFlush stdout
+  input <- io $ getLine
   case parse inputLine "" input of
-    Left err -> putStrLn $ "Parse error: " ++ show err
-    Right expr -> case eval expr of
-      Left err' -> putStrLn $ "Evaluation error: " ++ err'
-      Right res -> putStrLn $ printResult res
+    Left err -> io $ putStrLn $ "Parse error: " ++ show err
+    Right expr -> do
+      rt <- get
+      let (res,env) = runState (eval expr) (globalEnv rt)
+      put $ rt { globalEnv = env }
+      case res of
+        Left err' -> io $ putStrLn $ "Evaluation error: " ++ err'
+        Right r -> io $ putStrLn $ printResult r
   --putStrLn . show $ parse inputLine "" input
   runDiscoREPL
+
+-- Create the initial runtime
+initRuntime :: Runtime
+initRuntime = Runtime { globalEnv = M.empty }
+
+-- Lift an IO action into the REPL monad
+io :: IO a -> REPL a
+io = liftIO
