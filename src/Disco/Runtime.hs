@@ -56,7 +56,8 @@ builtins = M.fromList [
   ("/",btinDiv),
 
   ("not",btinNot),
-  ("=",btinEq)
+  ("=",btinEq),
+  (">",btinGt)
   ]
 
 -------------------------
@@ -271,3 +272,19 @@ btinEq [e1,e2] = do
       (ResultSExpr x1, ResultSExpr x2) -> return . Right . ResultBool $ and $ zipWith (==) x1 x2
       _ -> return $ Left "=: incompatible types"
 btinEq _ = return $ Left "=: expects 2 arguments"
+
+-- Built in greater-than function, can only compare numbers
+btinGt :: BuiltinFunc
+btinGt [e1,e2] = do
+  res1 <- eval e1
+  res2 <- eval e2
+  case (res1,res2) of
+    (Left err, _) -> return $ Left err
+    (_, Left err) -> return $ Left err
+    (Right (ResultNum n1), Right (ResultNum n2)) -> case (n1,n2) of
+      (NumberInt i1, NumberInt i2) -> return . Right . ResultBool $ i1 > i2
+      (NumberReal r1, NumberReal r2) -> return . Right . ResultBool $ r1 > r2
+      (NumberInt i, NumberReal r) -> return . Right . ResultBool $ fromInteger i > r
+      (NumberReal r, NumberInt i) -> return . Right . ResultBool $ r > fromInteger i
+    (_, _) -> return $ Left ">: arguments must be numbers"
+btinGt _ = return $ Left ">: expects 2 arguments"
