@@ -40,7 +40,7 @@ sexpr :: Parser Expr
 sexpr = do
   skip '('
   whitespace
-  es <- expression `sepEndBy1` whitespace
+  es <- expression `sepEndBy` whitespace
   whitespace
   skip ')'
   return $ SExpr es
