@@ -36,10 +36,13 @@ data Runtime = Runtime {
 
 -- Constants
 constants :: Env
-constants = M.fromList [
-  ("true",Boolean True),
-  ("false",Boolean False)
-  ]
+constants = Env {
+  bindings = M.fromList [
+    ("true",Boolean True),
+    ("false",Boolean False)
+    ],
+  parentEnv = Nothing
+}
 
 -- Map of builtin functions
 builtins :: M.Map String BuiltinFunc
@@ -50,7 +53,8 @@ builtins = M.fromList [
   ("/",btinDiv),
 
   ("quote",btinQuote),
-  ("eval",btinEval)
+  ("eval",btinEval),
+  ("set",btinSet)
   ]
 
 -------------------------
@@ -63,24 +67,36 @@ evalExprs = (sequence <$>) . mapM eval
 
 -- Evaluate an expression
 eval :: Expr -> State Env (Either String Result)
-eval (Symbol s) = evalLookup s
-eval (Number n) = return $ Right (ResultNum n)
-eval (Boolean b) = return $ Right (ResultBool b)
-eval (Character c) = return $ Right (ResultChar c)
-eval (LitString s) = return $ Right (ResultString s)
-eval (SExpr (fn:args)) = do
-  res <- eval fn
-  case res of
-    Right (ResultLookup name) -> evalFunc name args
-    Left err -> return $ Left err
-    _ -> return . Left $ show fn ++ " is not a function."
-eval e = return . Left $ "Cannot evaluate expression: " ++ show e
+eval expr = do
+  env <- get
+  put $ Env { bindings = M.empty, parentEnv = Just env }
+  res <- case expr of
+    Symbol s -> evalLookup s
+    Number n -> return $ Right (ResultNum n)
+    Boolean b -> return $ Right (ResultBool b)
+    Character c -> return $ Right (ResultChar c)
+    LitString s -> return $ Right (ResultString s)
+    SExpr (fn:args) -> do
+      res <- eval fn
+      case res of
+        Right (ResultLookup name) -> evalFunc name args
+        Left err -> return $ Left err
+        _ -> return . Left $ show fn ++ " is not a function."
+    _ -> return . Left $ "Cannot evaluate expression: " ++ show expr
+  penv <- gets parentEnv
+  case penv of
+    Just env' -> do
+      put env'
+      return res
+    Nothing -> return . Left $ "Environment somehow disappeared for expression: " ++ show expr
 
 -- Evaluate a symbol lookup
 evalLookup :: String -> State Env (Either String Result)
-evalLookup name = case envGet constants name of
-  Just e -> eval e
-  Nothing -> return . Right $ ResultLookup name
+evalLookup name = do
+  env <- get
+  case envGet env name of
+    Just e -> eval e
+    Nothing -> return . Right $ ResultLookup name
 
 -- Evaluate a function call
 evalFunc :: String -> [Expr] -> State Env (Either String Result)
@@ -106,6 +122,48 @@ resultToExpr (ResultSExpr es) = SExpr es
 -----------------------
 -- BUILTIN FUNCTIONS --
 -----------------------
+
+--------------
+-- LANGUAGE --
+--------------
+
+-- Bult in quote function, returns the expression as-is
+btinQuote :: BuiltinFunc
+btinQuote [Symbol s] = return . Right $ ResultLookup s
+btinQuote [Number n] = return . Right $ ResultNum n
+btinQuote [Boolean b] = return . Right $ ResultBool b
+btinQuote [Character c] = return . Right $ ResultChar c
+btinQuote [LitString s] = return . Right $ ResultString s
+btinQuote [SExpr exprs] = return . Right $ ResultSExpr exprs
+btinQuote e | length e == 1 = return . Left $ "quote: unknown expression: " ++ show (head e)
+btinQuote _ = return $ Left "quote: expects 1 argument"
+
+-- Bult in eval function, evaluate the result of evaluating the argument
+btinEval :: BuiltinFunc
+btinEval [e] = do
+  res <- eval e
+  case res of
+    Right r -> eval $ resultToExpr r
+    Left err -> return $ Left err
+btinEval _ = return $ Left "eval: expects 1 argument"
+
+-- Built in set function, bind a name to an expression in the parent environment
+btinSet :: BuiltinFunc
+btinSet [name, expr] = case name of
+  Symbol s -> do
+    env <- get
+    case parentEnv env of
+      Just penv -> do
+        let res = envSet penv s expr
+        put $ env { parentEnv = Just res }
+        return . Right $ ResultLookup s
+      Nothing -> return $ Left "set: no parent environment"
+  _ -> return $ Left "set: first argument must be a symbol"
+btinSet _ = return $ Left "set: expects 2 arguments"
+
+----------
+-- MATH --
+----------
 
 -- Built in add function '+'
 btinAdd :: BuiltinFunc
@@ -171,23 +229,3 @@ btinDiv exprs = do
     evalDiv (NumberReal r1) (NumberReal r2) = ResultNum . NumberReal $ r1 / r2
     evalDiv (NumberInt i) (NumberReal r) = ResultNum . NumberReal $ fromInteger i / r
     evalDiv (NumberReal r) (NumberInt i) = ResultNum . NumberReal $ r / fromInteger i
-
--- Bult in quote function, returns the expression as-is
-btinQuote :: BuiltinFunc
-btinQuote [Symbol s] = return . Right $ ResultLookup s
-btinQuote [Number n] = return . Right $ ResultNum n
-btinQuote [Boolean b] = return . Right $ ResultBool b
-btinQuote [Character c] = return . Right $ ResultChar c
-btinQuote [LitString s] = return . Right $ ResultString s
-btinQuote [SExpr exprs] = return . Right $ ResultSExpr exprs
-btinQuote e | length e == 1 = return . Left $ "quote: unknown expression: " ++ show (head e)
-btinQuote _ = return $ Left "quote: expects 1 argument"
-
--- Bult in eval function, evaluate the result of evaluating the argument
-btinEval :: BuiltinFunc
-btinEval [e] = do
-  res <- eval e
-  case res of
-    Right r -> eval $ resultToExpr r
-    Left err -> return $ Left err
-btinEval _ = return $ Left "eval: expects 1 argument"

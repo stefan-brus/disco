@@ -10,7 +10,12 @@ import Disco.Absyn
 -- TYPES --
 -----------
 
-type Env = M.Map String Expr
+type Bindings = M.Map String Expr
+
+data Env = Env {
+  bindings :: Bindings,
+  parentEnv :: Maybe Env
+}
 
 -----------------
 -- ENVIRONMENT --
@@ -18,4 +23,12 @@ type Env = M.Map String Expr
 
 -- Look something up in the environment
 envGet :: Env -> String -> Maybe Expr
-envGet e = flip M.lookup $ e
+envGet Env { bindings = b, parentEnv = p } name = case M.lookup name b of
+  Just res -> Just res
+  Nothing -> case p of
+    Just env -> envGet env name
+    Nothing -> Nothing
+
+-- Bind a name in the environment
+envSet :: Env -> String -> Expr -> Env
+envSet env@(Env { bindings = b }) name expr = env { bindings = M.insert name expr b }

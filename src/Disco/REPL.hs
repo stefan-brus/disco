@@ -10,6 +10,7 @@ import System.IO
 
 import Text.ParserCombinators.Parsec
 
+import Disco.Env
 import Disco.Runtime
 import Disco.Parser
 
@@ -43,7 +44,12 @@ runDiscoREPL = do
 
 -- Create the initial runtime
 initRuntime :: Runtime
-initRuntime = Runtime { globalEnv = M.empty }
+initRuntime = Runtime {
+globalEnv = Env {
+    bindings = M.empty,
+    parentEnv = Just constants
+  }
+}
 
 -- Lift an IO action into the REPL monad
 io :: IO a -> REPL a
