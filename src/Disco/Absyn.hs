@@ -13,9 +13,9 @@ data Expr =
   | Character Char
   | LitString String
   | SExpr [Expr]
-  deriving (Show)
+  deriving (Show,Eq)
 
 data NumberType =
     NumberInt Integer
   | NumberReal Double
-  deriving (Show)
+  deriving (Show,Eq)

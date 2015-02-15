@@ -23,7 +23,6 @@ data Result =
   | ResultSExpr [Expr]
   deriving (Show)
 
-
 type BuiltinFunc = [Expr] -> State Env (Either String Result)
 
 data Runtime = Runtime {
@@ -56,7 +55,8 @@ builtins = M.fromList [
   ("*",btinMul),
   ("/",btinDiv),
 
-  ("not",btinNot)
+  ("not",btinNot),
+  ("=",btinEq)
   ]
 
 -------------------------
@@ -248,3 +248,21 @@ btinNot [expr] = do
     Right _ -> return $ Left "not: first argument must be boolean"
     Left err -> return $ Left err
 btinNot _ = return $ Left "not: expects 1 argument"
+
+-- Built in equality function, incompatible types result in error
+btinEq :: BuiltinFunc
+btinEq [e1,e2] = do
+  r1 <- eval e1
+  r2 <- eval e2
+  case (r1,r2) of
+    (Left err, _) -> return $ Left err
+    (_, Left err) -> return $ Left err
+    (Right res1, Right res2) -> case (res1,res2) of
+      (ResultNum (NumberInt n1), ResultNum (NumberInt n2)) -> return . Right . ResultBool $ n1 == n2
+      (ResultNum (NumberReal n1), ResultNum (NumberReal n2)) -> return . Right . ResultBool $ n1 == n2
+      (ResultBool b1, ResultBool b2) -> return . Right . ResultBool $ b1 == b2
+      (ResultChar c1, ResultChar c2) -> return . Right . ResultBool $ c1 == c2
+      (ResultString s1, ResultString s2) -> return . Right . ResultBool $ s1 == s2
+      (ResultSExpr x1, ResultSExpr x2) -> return . Right . ResultBool $ and $ zipWith (==) x1 x2
+      _ -> return $ Left "=: incompatible types"
+btinEq _ = return $ Left "=: expects 2 arguments"
