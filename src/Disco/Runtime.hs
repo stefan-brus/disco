@@ -54,6 +54,7 @@ builtins = M.fromList [
   ("-",btinSub),
   ("*",btinMul),
   ("/",btinDiv),
+  ("abs",btinAbs),
 
   ("not",btinNot),
   ("=",btinEq),
@@ -243,6 +244,17 @@ btinDiv exprs = do
     evalDiv (NumberReal r1) (NumberReal r2) = ResultNum . NumberReal $ r1 / r2
     evalDiv (NumberInt i) (NumberReal r) = ResultNum . NumberReal $ fromInteger i / r
     evalDiv (NumberReal r) (NumberInt i) = ResultNum . NumberReal $ r / fromInteger i
+
+-- Built in abs function, get the absolute value of a given number
+btinAbs :: BuiltinFunc
+btinAbs [expr] = do
+  res <- eval expr
+  case res of
+    Right (ResultNum (NumberInt n)) -> return . Right . ResultNum . NumberInt $ abs n
+    Right (ResultNum (NumberReal n)) -> return . Right . ResultNum . NumberReal $ abs n
+    Right _ -> return $ Left "abs: argument must be a number"
+    Left err -> return $ Left err
+btinAbs _ = return $ Left "abs: expects 1 argument"
 
 -------------
 -- BOOLEAN --
