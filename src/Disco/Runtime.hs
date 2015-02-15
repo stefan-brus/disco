@@ -50,6 +50,8 @@ builtins = M.fromList [
   ("eval",btinEval),
   ("set",btinSet),
 
+  ("append",btinAppend),
+
   ("+",btinAdd),
   ("-",btinSub),
   ("*",btinMul),
@@ -175,6 +177,22 @@ btinSet [name, expr] = case name of
           Nothing -> return $ Left "set: no parent environment"
   _ -> return $ Left "set: first argument must be a symbol"
 btinSet _ = return $ Left "set: expects 2 arguments"
+
+----------
+-- LIST --
+----------
+
+-- Built in append function, appends two lists
+btinAppend :: BuiltinFunc
+btinAppend [e1,e2] = do
+  r1 <- eval e1
+  r2 <- eval e2
+  case (r1,r2) of
+    (Left err, _) -> return $ Left err
+    (_, Left err) -> return $ Left err
+    (Right (ResultSExpr es1), Right (ResultSExpr es2)) -> return . Right . ResultSExpr $ es1 ++ es2
+    (_, _) -> return $ Left "append: arguments must be lists"
+btinAppend _ = return $ Left "append: expects 2 arguments"
 
 ----------
 -- MATH --
