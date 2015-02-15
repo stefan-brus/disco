@@ -151,13 +151,16 @@ btinEval _ = return $ Left "eval: expects 1 argument"
 btinSet :: BuiltinFunc
 btinSet [name, expr] = case name of
   Symbol s -> do
-    env <- get
-    case parentEnv env of
-      Just penv -> do
-        let res = envSet penv s expr
-        put $ env { parentEnv = Just res }
-        return . Right $ ResultLookup s
-      Nothing -> return $ Left "set: no parent environment"
+    case envGet constants s of
+      Just _ -> return . Left $ "set: symbol " ++ s ++ " is a constant."
+      Nothing -> do
+        env <- get
+        case parentEnv env of
+          Just penv -> do
+            let res = envSet penv s expr
+            put $ env { parentEnv = Just res }
+            return . Right $ ResultLookup s
+          Nothing -> return $ Left "set: no parent environment"
   _ -> return $ Left "set: first argument must be a symbol"
 btinSet _ = return $ Left "set: expects 2 arguments"
 
