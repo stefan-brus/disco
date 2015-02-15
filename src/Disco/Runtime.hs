@@ -110,7 +110,12 @@ evalFunc name args = case M.lookup name builtins of
 printResult :: Result -> String
 printResult (ResultNum (NumberInt i)) = show i
 printResult (ResultNum (NumberReal r)) = show r
-printResult r = show r
+printResult (ResultBool True) = "true"
+printResult (ResultBool False) = "false"
+printResult (ResultChar c) = "'" ++ [c] ++ "'"
+printResult (ResultString s) = "\"" ++ s ++ "\""
+printResult (ResultLookup s) = s
+printResult (ResultSExpr xs) = printExpr $ SExpr xs
 
 -- Convert a result to an expression
 resultToExpr :: Result -> Expr
