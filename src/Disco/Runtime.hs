@@ -83,7 +83,7 @@ eval expr = do
       case res of
         Right (ResultLookup name) -> evalFunc name args
         Left err -> return $ Left err
-        _ -> return . Left $ show fn ++ " is not a function."
+        _ -> return . Left $ show fn ++ " is not a function"
     _ -> return . Left $ "Cannot evaluate expression: " ++ show expr
   penv <- gets parentEnv
   case penv of
@@ -104,7 +104,7 @@ evalLookup name = do
 evalFunc :: String -> [Expr] -> State Env (Either String Result)
 evalFunc name args = case M.lookup name builtins of
   Just fn -> fn args
-  Nothing -> return . Left $ name ++ " is not a function."
+  Nothing -> return . Left $ name ++ " is not a function"
 
 -- Print the result of evaluating an expression
 printResult :: Result -> String
@@ -154,7 +154,7 @@ btinSet :: BuiltinFunc
 btinSet [name, expr] = case name of
   Symbol s -> do
     case envGet constants s of
-      Just _ -> return . Left $ "set: symbol " ++ s ++ " is a constant."
+      Just _ -> return . Left $ "set: symbol " ++ s ++ " is a constant"
       Nothing -> do
         env <- get
         case parentEnv env of
