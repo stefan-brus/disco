@@ -47,14 +47,16 @@ constants = Env {
 -- Map of builtin functions
 builtins :: M.Map String BuiltinFunc
 builtins = M.fromList [
+  ("quote",btinQuote),
+  ("eval",btinEval),
+  ("set",btinSet),
+
   ("+",btinAdd),
   ("-",btinSub),
   ("*",btinMul),
   ("/",btinDiv),
 
-  ("quote",btinQuote),
-  ("eval",btinEval),
-  ("set",btinSet)
+  ("not",btinNot)
   ]
 
 -------------------------
@@ -232,3 +234,17 @@ btinDiv exprs = do
     evalDiv (NumberReal r1) (NumberReal r2) = ResultNum . NumberReal $ r1 / r2
     evalDiv (NumberInt i) (NumberReal r) = ResultNum . NumberReal $ fromInteger i / r
     evalDiv (NumberReal r) (NumberInt i) = ResultNum . NumberReal $ r / fromInteger i
+
+-------------
+-- BOOLEAN --
+-------------
+
+-- Built in 'not' function
+btinNot :: BuiltinFunc
+btinNot [expr] = do
+  res <- eval expr
+  case res of
+    Right (ResultBool b) -> return . Right $ ResultBool (not b)
+    Right _ -> return $ Left "not: first argument must be boolean"
+    Left err -> return $ Left err
+btinNot _ = return $ Left "not: expects 1 argument"
