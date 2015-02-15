@@ -15,7 +15,7 @@ import Disco.Absyn
 ------------------------
 
 operators :: [String]
-operators = ["+", "-", "*", "/", "=", ">"]
+operators = ["+", "-", "*", "/", "=", ">", "<"]
 
 ----------------------
 -- PARSER FUNCTIONS --
